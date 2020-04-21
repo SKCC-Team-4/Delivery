@@ -45,32 +45,6 @@ public class Delivery {
 
     }
 
-    //추가
-    @PostPersist
-    public void eventPublish(){
-        Shipped shipped = new Shipped();
-        shipped.setDeliveryDate(this.getDeliveryDate());
-        shipped.setId(this.getId());
-        shipped.setOrderId(this.getOrderId());
-        shipped.setStatus(this.getStatus());
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = null;
-
-        try {
-            json = objectMapper.writeValueAsString(shipped);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("JSON format exception", e);
-        }
-
-        Processor processor = Application.applicationContext.getBean(Processor.class);
-        MessageChannel outputChannel = processor.output();
-
-        outputChannel.send(MessageBuilder
-                .withPayload(json)
-                .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
-                .build());
-    }
 
     public Long getId() {
         return id;
