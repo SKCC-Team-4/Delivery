@@ -1,7 +1,17 @@
 package BookStore;
 
 import javax.persistence.*;
+
+import org.springframework.cloud.stream.messaging.Processor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.util.MimeTypeUtils;
+
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -15,6 +25,7 @@ public class Delivery {
     private String status;
     private Date deliveryDate;
     private Date cancelDate;
+
 
     @PostPersist
     public void onPostPersist(){
@@ -34,6 +45,32 @@ public class Delivery {
 
     }
 
+    //추가
+    @PostPersist
+    public void eventPublish(){
+        Shipped shipped = new Shipped();
+        shipped.setDeliveryDate(this.getDeliveryDate());
+        shipped.setId(this.getId());
+        shipped.setOrderId(this.getOrderId());
+        shipped.setStatus(this.getStatus());
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = null;
+
+        try {
+            json = objectMapper.writeValueAsString(shipped);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("JSON format exception", e);
+        }
+
+        Processor processor = Application.applicationContext.getBean(Processor.class);
+        MessageChannel outputChannel = processor.output();
+
+        outputChannel.send(MessageBuilder
+                .withPayload(json)
+                .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
+                .build());
+    }
 
     public Long getId() {
         return id;

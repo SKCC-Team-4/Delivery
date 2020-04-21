@@ -1,6 +1,8 @@
 
 package BookStore;
 
+import java.util.Date;
+
 public class PayCanceled extends AbstractEvent {
 
     private Long id;
